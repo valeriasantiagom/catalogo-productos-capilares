@@ -63,12 +63,124 @@
   jump.addEventListener('change',()=>turn(Number(jump.value)));
   addEventListener('keydown',e=>{if(['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName))return;if(e.key==='ArrowRight')turn(page+1);if(e.key==='ArrowLeft')turn(page-1);if(e.key==='Escape')adjust()});
   viewer.addEventListener('wheel',e=>{if(e.ctrlKey){e.preventDefault();setZoom(zoom+(e.deltaY<0?.25:-.25))}else if(zoom>1){e.preventDefault();dx-=e.deltaX;dy-=e.deltaY;apply()}},{passive:false});
-  let pointers=new Map(), start=null,pinch=null;
-  stage.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button!==0)return;stage.setPointerCapture(e.pointerId);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pointers.size===1){start={x:e.clientX,y:e.clientY,dx,dy};pinch=null}else if(pointers.size===2){const [a,b]=[...pointers.values()];pinch={distance:Math.hypot(a.x-b.x,a.y-b.y),zoom};start=null}});
-  stage.addEventListener('pointermove',e=>{if(!pointers.has(e.pointerId))return;pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pointers.size===2&&pinch){const [a,b]=[...pointers.values()];setZoom(pinch.zoom*Math.hypot(a.x-b.x,a.y-b.y)/Math.max(1,pinch.distance))}else if(pointers.size===1&&start&&zoom>1){dx=start.dx+e.clientX-start.x;dy=start.dy+e.clientY-start.y;apply()}});
-  function stop(e){const wasSingle=pointers.size===1&&start;const delta=wasSingle?e.clientX-start.x:0;const vertical=wasSingle?e.clientY-start.y:0;pointers.delete(e.pointerId);if(pointers.size===0){if(zoom===1&&!busy&&wasSingle&&Math.abs(delta)>45&&Math.abs(delta)>Math.abs(vertical)*1.25)turn(page+(delta<0?1:-1));start=null;pinch=null}else{start=null;pinch=null}};
-  stage.addEventListener('pointerup',stop);stage.addEventListener('pointercancel',stop);
-  stage.addEventListener('dblclick',()=>zoom>1?adjust():setZoom(2));
+  // Permite que el catálogo controle los gestos táctiles.
+	stage.style.touchAction = 'none';
+	over.style.touchAction = 'none';
+	under.style.touchAction = 'none';
+	overImg.style.touchAction = 'none';
+	underImg.style.touchAction = 'none';
+
+	let pointers = new Map();
+	let start = null;
+	let pinch = null;
+
+	stage.addEventListener('pointerdown', e => {
+	  if (e.pointerType === 'mouse' && e.button !== 0) return;
+
+	  stage.setPointerCapture(e.pointerId);
+	  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+	  if (pointers.size === 1) {
+		start = {
+		  x: e.clientX,
+		  y: e.clientY,
+		  dx,
+		  dy
+		};
+		pinch = null;
+	  }
+
+	  if (pointers.size === 2) {
+		const [a, b] = [...pointers.values()];
+
+		pinch = {
+		  distance: Math.hypot(a.x - b.x, a.y - b.y),
+		  zoom
+		};
+
+		start = null;
+	  }
+	});
+
+	stage.addEventListener('pointermove', e => {
+	  if (!pointers.has(e.pointerId)) return;
+
+	  pointers.set(e.pointerId, {
+		x: e.clientX,
+		y: e.clientY
+	  });
+
+	  // Dos dedos: ampliar o reducir.
+	  if (pointers.size === 2 && pinch) {
+		const [a, b] = [...pointers.values()];
+
+		const distance = Math.hypot(
+		  a.x - b.x,
+		  a.y - b.y
+		);
+
+		setZoom(
+		  pinch.zoom * distance / Math.max(1, pinch.distance)
+		);
+
+		return;
+	  }
+
+	  // Un dedo: mover la imagen cuando está ampliada.
+	  if (pointers.size === 1 && start && zoom > 1) {
+		dx = start.dx + e.clientX - start.x;
+		dy = start.dy + e.clientY - start.y;
+		apply();
+	  }
+	});
+
+	function stop(e) {
+	  if (!pointers.has(e.pointerId)) return;
+
+	  const wasSingle = pointers.size === 1 && start;
+
+	  const deltaX = wasSingle
+		? e.clientX - start.x
+		: 0;
+
+	  const deltaY = wasSingle
+		? e.clientY - start.y
+		: 0;
+
+	  pointers.delete(e.pointerId);
+
+	  if (pointers.size === 0) {
+		// Pasar de página únicamente cuando no hay zoom.
+		if (
+		  zoom === 1 &&
+		  !busy &&
+		  wasSingle &&
+		  Math.abs(deltaX) > 45 &&
+		  Math.abs(deltaX) > Math.abs(deltaY) * 1.25
+		) {
+		  turn(page + (deltaX < 0 ? 1 : -1));
+		}
+
+		start = null;
+		pinch = null;
+	  } else {
+		// Evita saltos cuando se levanta uno de los dos dedos.
+		start = null;
+		pinch = null;
+	  }
+	}
+
+	stage.addEventListener('pointerup', stop);
+	stage.addEventListener('pointercancel', stop);
+
+	// Doble clic en computadora o doble toque en celular.
+	stage.addEventListener('dblclick', () => {
+	  if (zoom > 1) {
+		adjust();
+	  } else {
+		setZoom(2);
+	  }
+	});
   pages.forEach((p,i)=>{const option=document.createElement('option');option.value=i;option.textContent=`${String(i+1).padStart(2,'0')} · ${p.title}`;jump.append(option)});
   if(!pages.length){msg('No se encontraron páginas en pages.js');return}
   load(0).then(()=>show(0)).catch(()=>msg('No se pudo cargar la portada. Comprueba la carpeta assets.'));
