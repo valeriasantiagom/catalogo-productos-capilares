@@ -21,3 +21,13 @@ button{cursor:pointer}button:hover{background:#fff}button:disabled{opacity:.42;c
 output{text-align:center;min-width:65px;display:grid;place-items:center}select{max-width:min(48vw,250px);cursor:pointer}
 .status{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:9;width:min(92%,500px);padding:22px;background:#fff9f4;border:1px solid #c99b88;border-radius:10px;text-align:center;font-weight:600;box-shadow:0 10px 40px rgba(0,0,0,.10)}
 @media(max-width:700px){.catalog{gap:5px;padding:5px}.controls{justify-content:center;gap:5px;padding:6px 4px calc(6px + var(--safe))}.control-cluster{gap:5px}button,select,output{font-size:12px;min-height:38px;padding:8px 9px}.viewer{border-radius:5px}.stage{perspective:1200px}select{max-width:180px}}
+/* Transición de revista más ágil en celulares */
+@media (max-width: 640px) {
+  .leaf.flip-next {
+    animation-duration: 0.75s;
+  }
+
+  .leaf.flip-prev {
+    animation-duration: 0.75s;
+  }
+}

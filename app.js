@@ -49,7 +49,7 @@
         over.addEventListener('animationend',end);
         over.classList.add(direction);
         // Transition safeguard for hidden tabs, reduced-motion browsers, or dropped animation events.
-        const timer=setTimeout(done,1050);
+        const timer=setTimeout(done,1800);
       });
       over.classList.remove('flip-next','flip-prev');
       show(target);
